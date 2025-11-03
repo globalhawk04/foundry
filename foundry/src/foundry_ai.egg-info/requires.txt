@@ -1,5 +1,0 @@
-sqlalchemy
-pydantic
-celery
-redis
-jinja2
