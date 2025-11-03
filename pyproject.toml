@@ -1,0 +1,24 @@
+# FILE: pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foundry"
+version = "0.1.0"
+description = "A production-grade Python framework for building resilient, human-in-the-loop AI systems."
+readme = "README.md"
+requires-python = ">=3.8"
+
+# These are the direct dependencies required for the framework to run.
+dependencies = [
+    "sqlalchemy",
+    "pydantic",
+    "celery",
+    "redis",
+    "jinja2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]  # Look for packages in the 'src' directory

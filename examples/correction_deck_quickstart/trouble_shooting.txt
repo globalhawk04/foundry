@@ -1,0 +1,21 @@
+If you get this:
+--- Setting up the SQLite database... ---
+--- Database already contains a job. ---
+Traceback (most recent call last):
+  File "/home/j/Desktop/foundry/examples/correction_deck_quickstart/quickstart.py", line 120, in <module>
+    with socketserver.TCPServer(("", PORT), FoundryHTTPRequestHandler) as httpd:
+  File "/usr/lib/python3.10/socketserver.py", line 452, in __init__
+    self.server_bind()
+  File "/usr/lib/python3.10/socketserver.py", line 466, in server_bind
+    self.socket.bind(self.server_address)
+OSError: [Errno 98] Address already in use
+(found_virts) j@pop-os:~/Desktop/foundry/ex
+
+
+do this:
+lsof -i :8000
+
+COMMAND   PID   USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+python  31415      j    3u  IPv4 123456      0t0  TCP *:8000 (LISTEN)
+
+kill -9 31415

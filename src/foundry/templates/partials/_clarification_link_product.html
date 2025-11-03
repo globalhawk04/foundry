@@ -1,0 +1,29 @@
+<!-- FILE: templates/partials/_clarification_link_product.html -->
+{# This template is dynamically selected when request.request_type == 'LINK_PRODUCT' #}
+<div class="clarification-card">
+    <h3>Link Invoice Item</h3>
+    <p>{{ request.context_data.prompt_for_user }}</p>
+    
+    <form hx-post="/clarifications/{{ request.id }}/resolve"
+          hx-target="#clarification-container"
+          hx-swap="innerHTML"
+          {# On success, this form will be replaced by the *next* question card #}
+          >
+        
+        <div class="form-group">
+            <label for="pantry_item_id">Select Product:</label>
+            <select name="pantry_item_id" id="pantry_item_id">
+                <option value="0">-- Choose a product --</option>
+                {# In a real app, these options would be populated from the database #}
+                <option value="101">Ground Beef 80/20</option>
+                <option value="102">Yellow Onions</option>
+                <option value="103">Cheddar Cheese, Shredded</option>
+            </select>
+        </div>
+
+        {# This hidden input tells the backend which ambiguity we're resolving #}
+        <input type="hidden" name="request_type" value="{{ request.request_type }}">
+
+        <button type="submit">Link Product</button>
+    </form>
+</div>

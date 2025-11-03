@@ -1,0 +1,8 @@
+# FILE: requirements.txt
+
+# --- Core Framework Dependencies ---
+sqlalchemy
+pydantic
+celery
+redis
+jinja2
