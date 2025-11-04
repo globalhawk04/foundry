@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <section id="clarification-section" 
+             hx-get="/api/clarifications/next" 
+             hx-trigger="load, loadNextCard from:body"
+             hx-swap="innerHTML">
+        
+        <!-- This is where the first clarification card will be loaded -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <p>Loading the next item for review...</p>
+            <progress></progress>
+        </div>
+        
+    </section>
+
+    <script>
+        // This is a simple event listener to handle the HX-Trigger from the server
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            // After a new card is loaded, we might need to initialize some JS, like the canvas editor.
+            // We can dispatch a custom event that specific scripts can listen for.
+            const event = new CustomEvent('cardLoaded', { detail: { target: evt.detail.target } });
+            window.dispatchEvent(event);
+        });
+    </script>
+{% endblock %}

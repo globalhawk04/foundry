@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2>Production Run Report</h2>
+            <p>Summary for: <strong>{{ use_case }}</strong></p>
+        </div>
+        <!-- This form contains the button to export the corrected data -->
+        <form action="/api/export" method="post">
+            <button type="submit" class="primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Export for Fine-Tuning
+            </button>
+        </form>
+    </header>
+
+    <div class="grid">
+        {% for job in jobs %}
+            <article class="{{ 'grid-item-corrected' if job.was_corrected else '' }}">
+                <header>
+                    <img src="{{ job.input_url }}" alt="Job input image" style="width:100%; height:auto; border-radius: var(--pico-border-radius);">
+                </header>
+                <footer>
+                    <strong>Job #{{ job.id }}</strong>
+                    <br>
+                    Status: 
+                    {% if job.was_corrected %}
+                        <span style="color: var(--pico-color-green-600);">✅ Corrected by You</span>
+                    {% else %}
+                        <span>✔️ Auto-Approved</span>
+                    {% endif %}
+                </footer>
+            </article>
+        {% else %}
+            <p>No jobs found for this run.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

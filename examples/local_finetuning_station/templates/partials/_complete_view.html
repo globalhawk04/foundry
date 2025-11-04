@@ -1,0 +1,55 @@
+<!-- FILE: templates/partials/_complete_view.html -->
+<article style="text-align: center; border-color: var(--pico-color-green-500);">
+    <header>
+        <h2 style="color: var(--pico-color-green-600);">✅ Fine-Tuning Complete!</h2>
+    </header>
+    
+    <p>You have successfully fine-tuned the model on your custom data. The resulting model adapter has been saved.</p>
+    
+    <h4>Your New Model Adapter:</h4>
+    <p>
+        <code>models/final_lora_adapter/</code>
+    </p>
+
+    <!--
+        NOTE: In a real-world application, you would provide a zip file download.
+        For this Docker-based example, the file is saved to a mounted volume,
+        making it directly accessible on the user's host machine.
+    -->
+    <p>
+        This file has been saved to the <strong>`models`</strong> folder in your
+        <strong>`local_finetuning_station`</strong> directory.
+    </p>
+    
+    <hr>
+    
+    <h4>How to Use Your New Model</h4>
+    <p>
+        To use your powerful new model, load the base model and then attach your
+        fine-tuned adapter using the PEFT library.
+    </p>
+    
+    <pre style="text-align: left; background-color: var(--pico-card-background-color);"><code>from peft import PeftModel
+from transformers import VisionEncoderDecoderModel, TrOCRProcessor
+
+# Load the base model (quantized or full precision)
+base_model = VisionEncoderDecoderModel.from_pretrained(
+    'microsoft/trocr-base-handwritten',
+    load_in_4bit=True,
+    device_map="auto"
+)
+
+# Load your fine-tuned LoRA adapter on top
+tuned_model = PeftModel.from_pretrained(base_model, './models/final_lora_adapter')
+
+# You can now use 'tuned_model' for inference, and it will be
+# far more accurate on your specific type of data!
+# processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-handwritten')
+# ... (run inference as usual) ...
+</code></pre>
+    
+    <footer>
+        <p>You can now stop the application (Ctrl+C in your terminal) or restart the process.</p>
+        <a href="/" role="button" class="secondary">Start a New Run</a>
+    </footer>
+</article>

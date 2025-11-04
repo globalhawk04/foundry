@@ -1,0 +1,18 @@
+<!-- FILE: templates/partials/_correction_complete.html -->
+<article style="text-align: center;">
+    <header>
+        <h2>All Corrections Complete!</h2>
+    </header>
+    <p>You have successfully reviewed all items flagged by the AI. You are now ready to fine-tune the model with your corrections.</p>
+    
+    <!-- This form contains the button that will trigger the training worker -->
+    <form hx-post="/train" hx-swap="none">
+        <footer class="hide-on-request">
+            <button class="primary" type="submit">Begin Fine-Tuning</button>
+        </footer>
+        <div class="htmx-indicator">
+            <progress></progress>
+            <p>Starting the training process... This may take a while.</p>
+        </div>
+    </form>
+</article>

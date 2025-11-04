@@ -1,0 +1,20 @@
+<!-- FILE: templates/partials/_correction_view.html -->
+
+<article>
+    <header><h2>Step 2: Correct AI Transcriptions</h2></header>
+    <p>
+        Review the images that the AI was uncertain about. Please provide the correct
+        text transcription for each image.
+    </p>
+    <section id="clarification-section"
+             hx-get="/api/clarifications/next"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+        
+        <!-- The first correction card will be loaded here by HTMX -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <progress></progress>
+            <p>Loading the next item for review...</p>
+        </div>
+    </section>
+</article>

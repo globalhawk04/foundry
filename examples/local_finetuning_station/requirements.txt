@@ -1,0 +1,27 @@
+# FILE: requirements.txt
+
+# --- Web Application ---
+fastapi
+uvicorn[standard]
+Jinja2
+python-multipart # For file uploads
+
+# --- Core ML/AI Libraries ---
+# Pytorch for CUDA 12.1 - this is the most critical dependency
+torch==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+transformers==4.41.1
+datasets
+accelerate
+# For PEFT / QLoRA
+peft
+bitsandbytes
+# For Computer Vision
+Pillow
+albumentations
+# ... (at the bottom of the file)
+SQLAlchemy==2.0.29
+scikit-learn
+
+# --- Foundry Framework ---
+# Install the framework from the parent directory in editable mode
+-e ../../

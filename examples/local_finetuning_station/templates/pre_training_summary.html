@@ -1,0 +1,53 @@
+<!-- FILE: templates/pre_training_summary.html -->
+{% extends "layout.html" %}
+
+{% block content %}
+<article style="text-align: center;">
+    <header>
+        <h2>Step 3: Begin Fine-Tuning</h2>
+    </header>
+    
+    <p>
+        You have successfully reviewed all items flagged by the AI.
+    </p>
+    
+    <!-- Display some useful statistics -->
+    <div class="grid">
+        <div>
+            <figure>
+                <h3 style="margin: 0;">{{ total_jobs }}</h3>
+                <figcaption>Total Images Processed</figcaption>
+            </figure>
+        </div>
+        <div>
+            <figure>
+                <h3 style="margin: 0;">{{ corrected_jobs }}</h3>
+                <figcaption>Images You Corrected</figcaption>
+            </figure>
+        </div>
+    </div>
+
+    <p>
+        The system is now ready to use your <strong>{{ corrected_jobs }} corrections</strong> to fine-tune the base model.
+        This will create a new, specialized model adapter that is more accurate on your specific data.
+    </p>
+    <p>
+        <small>
+            <strong>Warning:</strong> This process is computationally intensive and may take a significant amount of time (minutes to hours) depending on your GPU and the number of corrections. The application will be in a "Training Mode" and you will not be able to perform other actions until it is complete.
+        </small>
+    </p>
+
+    <!-- This form contains the button that will trigger the training worker -->
+    <form hx-post="/train" hx-swap="none">
+        <footer class="hide-on-request">
+            <button class="primary" type="submit" style="font-size: 1.2rem; padding: 1rem 2rem;">
+                Start Fine-Tuning Process
+            </button>
+        </footer>
+        <div class="htmx-indicator">
+            <progress></progress>
+            <p>Requesting training start... The UI will update shortly.</p>
+        </div>
+    </form>
+</article>
+{% endblock %}

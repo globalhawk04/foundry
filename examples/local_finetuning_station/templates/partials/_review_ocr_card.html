@@ -1,0 +1,26 @@
+<!-- FILE: templates/partials/_review_ocr_card.html -->
+
+<div id="correction-card-{{ request.id }}">
+    <div class="grid">
+        <!-- Left Side: Image -->
+        <div>
+            <img src="/images/{{ request.context_data.image_path.split('/')[-1] }}" alt="Image to OCR" style="max-width: 100%; border-radius: var(--pico-border-radius);">
+        </div>
+        <!-- Right Side: Correction Form -->
+        <div>
+            <form hx-post="/api/clarifications/{{ request.id }}/resolve" hx-target="#correction-card-{{ request.id }}" hx-swap="outerHTML">
+                <label for="ai-transcription">
+                    AI Transcription (Confidence: {{ (request.context_data.ai_output.confidence * 100)|round(1) }}%)
+                </label>
+                <textarea id="ai-transcription" readonly disabled>{{ request.context_data.ai_output.text }}</textarea>
+                
+                <label for="human-correction">Your Correction</label>
+                <textarea id="human-correction" name="corrected_text" rows="5" required>{{ request.context_data.ai_output.text }}</textarea>
+                
+                <footer style="margin-top: 1rem;">
+                    <button type="submit" class="primary">Save Correction & Load Next</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+</div>

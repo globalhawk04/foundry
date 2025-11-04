@@ -1,0 +1,47 @@
+<!-- FILE: templates/partials/_training_view.html (Corrected) -->
+<article style="text-align: center;">
+    <header>
+        <h2>Step 4: Fine-Tuning in Progress...</h2>
+    </header>
+    
+    <p>The system is now fine-tuning the model using your corrections. Please do not close this tab.</p>
+    <p>
+        <small>
+            This process is computationally intensive and may take a significant amount of time.
+        </small>
+    </p>
+
+    <!-- This is the container for our live status updates -->
+    <div id="training-status-container" 
+         hx-get="/api/status" 
+         hx-trigger="load, every 2s" 
+         hx-swap="innerHTML">
+        <!-- The initial loading message -->
+        <progress></progress>
+        <p>Initializing...</p>
+    </div>
+    
+    <!-- This container will be populated when the training is complete -->
+    <div id="training-complete-container"></div>
+</article>
+
+<script>
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.pathInfo.path === '/api/status') {
+        try {
+            // We can't parse JSON anymore, so we check the raw text
+            // A bit fragile, but works for this example.
+            if (evt.detail.xhr.responseText.includes('COMPLETE')) {
+                // When training is complete, stop polling this section
+                const statusContainer = document.getElementById('training-status-container');
+                htmx.trigger(statusContainer, 'htmx:abort');
+
+                // And load the final "complete" view into the other container
+                htmx.ajax('GET', '/api/current_view', '#training-complete-container');
+            }
+        } catch (e) {
+            // Ignore errors
+        }
+    }
+});
+</script>

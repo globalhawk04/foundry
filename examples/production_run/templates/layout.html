@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Foundry Production Run</title>
+    
+    <!-- Pico.css for clean, modern styling -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    
+    <!-- HTMX for dynamic UI -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+
+    <style>
+        /* A little bit of custom styling for our app */
+        body {
+            padding-bottom: 5rem;
+        }
+        nav {
+            background-color: var(--card-background-color);
+            border-bottom: 1px solid var(--card-border-color);
+        }
+        .container {
+            max-width: 1100px;
+        }
+
+        /* --- THIS IS THE FIX --- */
+        /* Style for the report page grid */
+        .grid {
+            display: grid;
+            /* Create responsive columns: as many as can fit that are at least 280px wide */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem; /* Add space between the cards */
+        }
+        /* ----------------------- */
+        
+        /* Style for highlighting low confidence fields */
+        .low-confidence {
+            border: 1px solid var(--pico-color-orange-500);
+            border-radius: var(--pico-border-radius);
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--pico-color-orange-100);
+        }
+        .low-confidence label {
+            color: var(--pico-color-orange-600);
+            font-weight: bold;
+        }
+        /* Helper class for the report page */
+        .grid-item-corrected {
+            border-left: 4px solid var(--pico-color-green-500);
+        }
+    </style>
+</head>
+<body>
+    <nav class="container-fluid">
+        <ul>
+            <li><strong>Foundry Production Run</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">Review Feed</a></li>
+            <li><a href="/report">Final Report</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

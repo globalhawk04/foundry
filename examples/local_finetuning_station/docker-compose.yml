@@ -1,0 +1,23 @@
+# FILE: docker-compose.yml
+
+version: '3.8'
+
+services:
+  finetuning_station:
+    build: .
+    container_name: foundry_finetuning_station
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount local directories into the container for persistent storage
+      # This means your uploaded data and trained models will not disappear
+      # when the container stops.
+      - ./data:/app/data
+      - ./models:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
