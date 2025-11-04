@@ -1,0 +1,168 @@
+<!-- FILE: templates/partials/_clarification_pole.html (Complete & Corrected) -->
+<article id="pole-editor-card">
+    <header>
+        <h2>
+            Review Pole Detection for Job #{{ clarification_request.context_data.job_id }}
+        </h2>
+        <p>Review the AI's detections. Incorrect boxes can be deleted. Missing poles can be added by clicking and dragging on the image. Low-confidence boxes are highlighted in orange.</p>
+    </header>
+
+    <div id="canvas-container" style="border: 1px solid var(--card-border-color); border-radius: var(--pico-border-radius); position: relative;">
+        <canvas id="canvas-editor"></canvas>
+    </div>
+    
+    <footer>
+        <p><strong>Controls:</strong> Click a box to select. Press <strong>Delete</strong> or <strong>Backspace</strong> to remove. Click and drag on an empty area to draw a new box.</p>
+        <button id="save-correction-btn" class="primary" data-request-id="{{ clarification_request.id }}">
+            Save Correction & Load Next
+        </button>
+    </footer>
+</article>
+
+<!-- This script tag passes the data from the server to the client -->
+<script id="ai-data" type="application/json">
+    {{ clarification_request.context_data | tojson | safe }}
+</script>
+
+<!-- Load the Fabric.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+<!-- 
+    This single, self-contained script now handles everything:
+    - Image rendering
+    - Drawing initial boxes
+    - User interactions for editing boxes
+    - Saving the final result
+-->
+<script>
+    function initializeFullEditor() {
+        console.log("--- Editor: Initializing full editor ---");
+        
+        // 1. Get elements and data
+        const card = document.getElementById('pole-editor-card');
+        const container = document.getElementById('canvas-container');
+        const canvasEl = document.getElementById('canvas-editor');
+        const dataEl = document.getElementById('ai-data');
+        const saveBtn = document.getElementById('save-correction-btn');
+
+        if (!container || !canvasEl || !dataEl || !saveBtn) {
+            console.error("--- Editor: Could not find essential elements. Aborting. ---");
+            return;
+        }
+
+        const aiData = JSON.parse(dataEl.textContent);
+        const imageUrl = aiData.image_url;
+        const initialBoxes = aiData.ai_output.boxes;
+        
+        const canvas = new fabric.Canvas(canvasEl);
+        let isDrawing = false, startX, startY, rect;
+
+        // 2. Render the background image (the proven, working logic)
+        fabric.Image.fromURL(imageUrl, (img) => {
+            const containerWidth = container.clientWidth;
+            if (containerWidth === 0) {
+                console.error("--- Editor: FATAL! Container width is 0. ---");
+                return;
+            }
+            const scale = containerWidth / img.width;
+            canvas.setWidth(containerWidth);
+            canvas.setHeight(img.height * scale);
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                scaleX: scale, scaleY: scale,
+            });
+            console.log("--- Editor: Background image rendered successfully. ---");
+            
+            // 3. NOW, draw the initial bounding boxes
+            drawInitialBoxes(initialBoxes, scale);
+
+        }, { crossOrigin: 'anonymous' });
+
+        // 4. Function to draw the AI's initial boxes
+        const drawInitialBoxes = (boxes, scale) => {
+            boxes.forEach(boxData => {
+                const [x1, y1, x2, y2] = boxData.box;
+                const confidence = boxData.confidence;
+                const boxRect = new fabric.Rect({
+                    left: x1 * scale, top: y1 * scale,
+                    width: (x2 - x1) * scale, height: (y2 - y1) * scale,
+                    fill: 'rgba(0,0,0,0)',
+                    stroke: confidence < 0.95 ? 'orange' : 'limegreen',
+                    strokeWidth: 2,
+                    customData: {
+                        box_id: boxData.box_id, label: boxData.label,
+                        confidence: confidence, is_human: false
+                    }
+                });
+                canvas.add(boxRect);
+            });
+            console.log(`--- Editor: Drew ${boxes.length} initial boxes. ---`);
+        };
+
+        // 5. Add event handlers for user drawing
+        canvas.on('mouse:down', function(o) {
+            if (o.target) return; // Don't start drawing if clicking an existing box
+            isDrawing = true;
+            const pointer = canvas.getPointer(o.e);
+            startX = pointer.x; startY = pointer.y;
+            rect = new fabric.Rect({ left: startX, top: startY, width: 0, height: 0, fill: 'rgba(0,0,0,0)', stroke: 'cyan', strokeWidth: 2, customData: { label: 'utility_pole', is_human: true } });
+            canvas.add(rect);
+        });
+        canvas.on('mouse:move', function(o) {
+            if (!isDrawing) return;
+            const pointer = canvas.getPointer(o.e);
+            let width = pointer.x - startX; let height = pointer.y - startY;
+            rect.set({ left: width > 0 ? startX : pointer.x, top: height > 0 ? startY : pointer.y, width: Math.abs(width), height: Math.abs(height) });
+            canvas.renderAll();
+        });
+        canvas.on('mouse:up', function() {
+            isDrawing = false;
+            if (rect && (rect.width < 5 || rect.height < 5)) { canvas.remove(rect); }
+        });
+
+        // 6. Add keyboard handler for deleting boxes
+        const keydownHandler = function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject) { canvas.remove(activeObject); }
+            }
+        };
+        window.addEventListener('keydown', keydownHandler);
+
+        // 7. Add save button functionality
+        saveBtn.addEventListener('click', async function() {
+            const requestId = this.getAttribute('data-request-id');
+            const scale = canvas.backgroundImage.scaleX;
+            const finalBoxes = canvas.getObjects('rect').map((obj, index) => {
+                const x1 = Math.round(obj.left / scale);
+                const y1 = Math.round(obj.top / scale);
+                const x2 = Math.round((obj.left + obj.width) / scale);
+                const y2 = Math.round((obj.top + obj.height) / scale);
+                return {
+                    box_id: obj.customData.box_id || `human_${index}`, label: obj.customData.label,
+                    confidence: obj.customData.is_human ? 1.0 : obj.customData.confidence,
+                    box: [x1, y1, x2, y2]
+                };
+            });
+            const payload = { boxes: finalBoxes };
+
+            const response = await fetch(`/api/clarifications/${requestId}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                htmx.trigger(document.body, 'loadNextCard');
+            } else { alert('Error saving correction.'); }
+        });
+        
+        // 8. IMPORTANT: Clean up the global keydown listener when HTMX swaps the content
+        htmx.on(card, 'htmx:beforeSwap', () => {
+            window.removeEventListener('keydown', keydownHandler);
+            console.log("--- Editor: Cleaned up keyboard listener. ---");
+        });
+    }
+
+    // Use the proven timeout method to reliably kick everything off
+    setTimeout(initializeFullEditor, 100);
+
+</script>
