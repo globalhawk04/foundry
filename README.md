@@ -210,6 +210,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 **Date:** November 4, 2025  
 **Authors:** knightbat2040
+
 **Abstract:** The proliferation of powerful, open-source foundation models has shifted the primary challenge in applied AI from model creation to model specialization. The key to competitive advantage lies in creating a "data flywheel"—a virtuous cycle where operational data is used to continuously fine-tune a generalist model into a domain-specific expert. Historically, this has required significant cloud compute resources and complex MLOps infrastructure. This paper outlines a novel, pragmatic architecture that makes this flywheel achievable on a single, consumer-grade GPU (e.g., with 8GB of VRAM), and proposes a "Time-Slicing" scheduling model for its future evolution into a truly autonomous learning system.
 
 ### **1. The Paradigm Shift: From Static Training to the Dynamic Data Flywheel**
