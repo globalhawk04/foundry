@@ -1,97 +1,104 @@
 
-
 # Foundry: The Framework for Production-Grade AI Data Flywheels
 
-**Go from a fragile AI prototype to a resilient, self-improving system.**
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-username/foundry)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-Foundry is a Python framework for building production-grade, human-in-the-loop systems that turn daily operations into a scalable, ever-improving data generation engine for fine-tuning your AI models.
+**Go from a fragile AI prototype to a resilient, self-improving production system.**
+
+Foundry is a Python framework for building the operational backbone of modern AI applications. It provides the architectural components to create resilient, human-in-the-loop data flywheels, turning the necessary work of correcting AI mistakes into a scalable engine for continuous model improvement.
 
 
-## The Problem: Moving Beyond the Notebook
 
-Building a simple AI prototype is easy. Building a robust, production-ready AI system that continuously improves is incredibly hard. Real-world AI systems face constant challenges that POCs and notebooks ignore:
+## The Problem: Production AI is a Game of Exceptions
 
-*   **Imperfect Models:** Generative AI models are powerful but are never 100% accurate. Their outputs require validation, and forcing them to guess leads to low-quality results and a poor user experience.
-*   **Fragile Pipelines:** Real-world AI tasks are multi-step processes. A failure in one OCR or data extraction step shouldn't bring down the entire system or lose valuable, expensive work from prior steps.
-*   **Data Ambiguity:** Sometimes, the AI doesn't have enough context to make a confident decision. The system needs a way to pause and ask a human for the specific information it needs to proceed.
-*   **Stagnant Models:** An AI model that doesn't learn from its mistakes will never get better. Manually curating datasets from production logs is tedious, error-prone, and rarely gets done.
+Getting an AI model to 85% accuracy is easier than ever. Getting it from 85% to a production-ready 99% is where most projects fail. The real world is messy, and production systems must be built to handle the inevitable exceptions:
+
+*   **Imperfect Models:** Foundation models are generalists. They make mistakes on your specific, domain-critical data, leading to a poor user experience.
+*   **Fragile Pipelines:** Real-world tasks are multi-step processes. A single failure in an OCR or extraction step shouldn't halt an entire batch or lose valuable work.
+*   **Stagnant Models:** An AI that doesn't learn from its operational mistakes will never improve, leading to high manual correction costs and a frustrating user experience.
 
 ## The Solution: The Foundry Data Flywheel
 
-Foundry provides the architectural components to solve these problems by helping you build a **data flywheel**: a virtuous cycle where every human correction directly contributes to a better, more accurate, and more autonomous next-generation AI model.
+Foundry provides the structure to build a **virtuous cycle** where every human intervention makes your AI system smarter, more accurate, and more autonomous.
 
-1.  **Resilient Pipelines:** Structure your AI tasks as a series of resilient `Phases`. If a step fails or needs clarification, the pipeline pauses, preserving the work from successful prior steps.
-2.  **Human-in-the-Loop:** When the system detects ambiguity (based on confidence scores or custom business logic), it automatically generates a `ClarificationRequest`, pausing the pipeline to ask a human operator for the specific information it needs.
-3.  **Correction & Fine-Tuning:** All AI outputs can be reviewed and corrected by a human in a UI. Foundry is UI-agnostic, supporting everything from simple web forms to complex bounding box editors. Every correction is saved as a high-quality `CorrectionRecord`.
-4.  **Export & Improve:** The collected `CorrectionRecord`s are exported into a perfect, model-ready `.jsonl` dataset. Use this data to fine-tune your next model, deploy it, and watch the flywheel spin faster with less need for human intervention.
+
+### How It Works
+
+1.  **Resilient Execution:** You structure your task as a `Pipeline` of resilient `Phases`. The system processes a batch of jobs, saving state after each step.
+2.  **Automated Triage:** Your custom `AmbiguityDetector` (based on confidence scores or business logic) automatically flags jobs where the AI is uncertain. The `HumanInTheLoopPhase` pauses the pipeline for these specific jobs.
+3.  **Human Correction:** A human operator reviews the flagged jobs in a UI. Foundry is UI-agnostic, supporting everything from simple web forms to complex canvas editors. Every fix is saved as a perfect `CorrectionRecord`.
+4.  **Fine-Tuning & Redeployment:** The collected `CorrectionRecord`s are exported into a clean `.jsonl` dataset. You use this data to fine-tune your model (e.g., Gemma, Llama, TrOCR). The newly fine-tuned model replaces the old one, and the flywheel spins again, requiring less human intervention on the next cycle.
 
 ---
 
-## See Foundry in Action in 2 Minutes
+## See Foundry in Action
 
-The best way to understand Foundry is to see it run. Our flagship `production_run` example simulates a complete, interactive workflow for two different AI use cases.
+We offer two powerful examples to demonstrate the framework's capabilities.
 
-#### Prerequisites
-*   Python 3.8+
-*   `git` and `pip`
+### 🚀 Quick Demo: The Correction Flywheel
 
-#### Instructions
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/foundry.git
-    cd foundry
-    ```
+This example runs a simple, self-contained web server (no Docker or GPU required) that simulates an Invoice OCR workflow. It's the fastest way to understand the core data correction and export loop.
 
+1.  **Clone the repository:** `git clone https://github.com/your-username/foundry.git && cd foundry`
 2.  **Navigate to the example and install dependencies:**
     ```bash
     cd examples/production_run
     pip install -r requirements.txt
     ```
-
 3.  **Run the interactive simulator:**
     ```bash
     python production_run.py
     ```
+4.  **Follow the prompts, open `http://localhost:8000`**, and use the web UI to correct the AI's mistakes and export the final dataset.
 
-4.  **Follow the prompts:**
-    *   The script will first ask you to **choose a use case** (Invoice OCR or Pole Detection).
-    *   It will then ask you to **set a confidence threshold** for when the AI should ask for help.
-    *   Finally, it will start a web server and give you a URL.
 
-5.  **Open the URL in your browser (`http://localhost:8000`) and become the human in the loop.** Correct the AI's mistakes. When you're done, view the final report and export your work as a fine-tuning dataset.
+
+### 🧠 Advanced Demo: The Local Fine-Tuning Station
+
+This is the flagship example. It is a complete, containerized application that allows you to perform **"one-click" local fine-tuning of an OCR model on your own data** using a consumer NVIDIA GPU.
+
+> **⚠️ Advanced Setup Required:** This demo requires **Docker**, an **NVIDIA GPU (>=8GB VRAM)**, and the **NVIDIA Container Toolkit**.
+
+1.  **Navigate to the advanced example:**
+    ```bash
+    cd examples/local_finetuning_station
+    ```
+2.  **Build and run the containerized application:**
+    ```bash
+    # This will take several minutes on the first run
+    docker-compose build
+    docker-compose up
+    ```
+3.  **Open `http://localhost:8000`** and follow the workflow: upload your own images, correct the AI's transcriptions, and trigger the fine-tuning process directly from the UI, all on your local machine.
 
 ---
 
-## Core Concepts
-
-Foundry's architecture is built on a few simple, powerful abstractions:
-
-| Component | Description |
-| :--- | :--- |
-| **`Job`** | The central data model. Represents a single, discrete unit of work for the AI to perform and a human to potentially correct. |
-| **`Pipeline`** | An orchestrator that runs a sequence of `Phase` objects, ensuring resilience by saving state after each step. |
-| **`Phase`** | An abstract class representing a single, synchronous step in a `Pipeline` (e.g., call an OCR model, classify text). |
-| **`AmbiguityDetector`** | A special class containing your business logic to find problems in an AI's output that require human clarification. |
-| **`HumanInTheLoopPhase`** | A special `Phase` that runs your `AmbiguityDetector` and pauses the `Pipeline` if ambiguities are found. |
-| **`CorrectionHandler`** | A service that handles saving human corrections and exporting them into a clean, model-ready dataset. |
-
 ## Project Philosophy
 
-*   **It's the Glue, Not the Universe:** Foundry is not a monolithic MLOps platform or a complex labeling tool like Label Studio. It is the flexible, unopinionated "glue" that connects your application logic, your AI models, and your human operators into a single, resilient system.
-*   **Developer Experience First:** The goal is to provide clean, Pythonic abstractions that are easy to understand, extend, and integrate into existing applications (e.g., FastAPI, Flask, Celery).
-*   **UI-Agnostic:** The backend provides the hooks and data. You bring your own correction UI, whether it's a simple Jinja2 template, an interactive canvas, or a React frontend.
+*   **The Bridge, Not the Island:** Foundry is not a monolithic MLOps platform or a replacement for Label Studio. It is the **specialized bridge** that connects your application logic, your AI models, and your human operators. It fills the critical gap between workflow orchestration and data annotation.
+*   **Developer Experience First:** The goal is to provide clean, Pythonic abstractions (`Pipeline`, `Phase`, `CorrectionRecord`) that are easy to understand and integrate into existing applications built with tools like FastAPI, Flask, and Celery.
+*   **UI-Agnostic:** The backend provides the data and the state machine. You bring your own correction UI, whether it's a simple Jinja2 template, an interactive canvas, or a React frontend.
 
 ## Installation for Your Own Project
 
-To use Foundry as a framework in your own application, you can install it directly from GitHub. It is recommended to install from a specific release tag to ensure stability.
+To use Foundry as a library in your own application, install it directly from GitHub.
 
 ```bash
-# Install a specific version
+# It is recommended to install from a specific release tag for stability
 pip install git+https://github.com/your-username/foundry.git@v0.1.0
 
-# Or, install the latest version from the main branch (for development)
+# Or, install the latest version for development
 pip install git+https://github.com/your-username/foundry.git
 ```
+
+## What's Next: A Pluggable Architecture
+
+Our vision is to evolve Foundry into a fully pluggable framework. Future versions will include:
+*   A library of swappable **`Detectors`** (for confidence, heuristics, active learning).
+*   A library of swappable **`Exporters`** for different fine-tuning formats (OpenAI, Hugging Face TRL).
+*   A basic **UI Kit** of pre-built Jinja2/HTMX components for common correction tasks.
 
 ## Contributing
 
