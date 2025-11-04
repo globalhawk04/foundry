@@ -93,12 +93,108 @@ pip install git+https://github.com/your-username/foundry.git@v0.1.0
 pip install git+https://github.com/your-username/foundry.git
 ```
 
-## What's Next: A Pluggable Architecture
+**Roadmap: Evolving Foundry from a Reactive Flywheel to an Autonomous Learning Loop**
 
-Our vision is to evolve Foundry into a fully pluggable framework. Future versions will include:
-*   A library of swappable **`Detectors`** (for confidence, heuristics, active learning).
-*   A library of swappable **`Exporters`** for different fine-tuning formats (OpenAI, Hugging Face TRL).
-*   A basic **UI Kit** of pre-built Jinja2/HTMX components for common correction tasks.
+
+
+### **Phase 1: Intelligent Data Curation (The "Smarter Filter")**
+
+**Goal:** Move from passively correcting low-confidence samples to proactively identifying the most valuable data for a human to review.
+
+*   **[ ] Task 1.1: Refactor the HITL Trigger to be Pluggable**
+    *   Modify `HumanInTheLoopPhase` to accept a *list* of "Detector" objects instead of a single class.
+    *   Create a base `Detector` abstract class that all detectors will inherit from. It should have a `detect(job)` method.
+    *   Ensure the pipeline pauses if *any* detector in the list returns a `ClarificationRequest`.
+
+*   **[ ] Task 1.2: Implement a Library of Basic Detectors**
+    *   Create `foundry/detectors.py`.
+    *   Migrate our existing logic into `LowConfidenceDetector(Detector)`.
+    *   Create `RegexMismatchDetector(Detector)` that takes a field name and a regex pattern and flags jobs that don't match.
+    *   Create `HeuristicDetector(Detector)` that takes a user-defined function (`lambda job: ...`) and flags a job if the function returns `True`.
+
+*   **[ ] Task 1.3: Implement a Batch-Level "Active Learning" Detector**
+    *   This is the core of this phase. Create a new `ActiveLearningPhase` that runs *after* a full batch of jobs has been processed by an initial AI phase.
+    *   Create an `UncertaintySamplingDetector` that:
+        1.  Gathers all prediction confidence scores from the batch.
+        2.  Selects the top 'k' items with the lowest confidence (most uncertain).
+        3.  Creates `ClarificationRequest`s only for these 'k' items.
+    *   Create an `EmbeddingClusteringDetector` (Advanced):
+        1.  Requires a `Phase` that generates embeddings for each job's output.
+        2.  It clusters these embeddings (e.g., using `sklearn.cluster.KMeans`).
+        3.  It selects a diverse set of samples by picking one from each cluster, prioritizing those closest to the cluster edge (most ambiguous).
+
+*   **[ ] Task 1.4: Update the Example App**
+    *   Modify the `local_finetuning_station` to include a new UI element allowing the user to choose their curation strategy: "Correct all below threshold" vs. "Correct the 10 most uncertain samples."
+
+
+### **Phase 2: Amplifying Human Effort (The "Leverage Engine")**
+
+**Goal:** Make every single human correction exponentially more valuable by using it to seed a synthetic data generation process.
+
+*   **[ ] Task 2.1: Design the `SyntheticDataPhase`**
+    *   Create a new `Phase` subclass called `SyntheticDataPhase`.
+    *   This phase will be triggered *after* a `CorrectionRecord` is created.
+    *   It will take the `CorrectionRecord` (containing the image and the human's correct label) as input.
+
+*   **[ ] Task 2.2: Implement a Text-to-Text Synthesizer**
+    *   Create a `TextAugmentationWorker` that can be called by the `SyntheticDataPhase`.
+    *   Given a corrected text string, it uses a powerful LLM (e.g., Gemma) with specific prompts to generate realistic variations (rephrasing, changing tone, adding typos that are different from the original model's mistake).
+    *   These synthetic text variations are saved as new, "synthetic" `CorrectionRecord`s.
+
+*   **[ ] Task 2.3: Implement an Image-to-Image Synthesizer (Advanced)**
+    *   Create an `ImageAugmentationWorker`.
+    *   Given a corrected image and bounding box, it uses a generative model like **Stable Diffusion with ControlNet or LoRA**.
+    *   It will generate variations of the image by changing backgrounds, lighting conditions, and camera angles while keeping the core object and its bounding box consistent.
+    *   This is a complex task that requires significant research into generative model control.
+
+*   **[ ] Task 2.4: Update the Training Worker**
+    *   Modify the `training_worker` to be able to distinguish between "golden" human-provided records and "silver" synthetic records.
+    *   It might use the synthetic data for standard fine-tuning and reserve the human data for the more powerful contrastive learning loop.
+
+
+### **Phase 3: The Autonomous Supervisor (The "MLOps Brain")**
+
+**Goal:** Automate the orchestration of the flywheel, elevating the human's role from worker to supervisor.
+
+*   **[ ] Task 3.1: Create the Supervisor Service**
+    *   This will be a separate, long-running process or a cron job.
+    *   It will periodically query the database.
+
+*   **[ ] Task 3.2: Implement Automated Training Triggers**
+    *   The Supervisor will have a simple rule: `IF count(new_correction_records) > threshold (e.g., 100) AND last_training_run > 1 week ago THEN trigger_training_job()`.
+    *   This will automatically call our `training_worker.py` script.
+
+*   **[ ] Task 3.3: Implement Shadow Deployment & A/B Testing**
+    *   Create a new table in `foundry/models.py` called `ModelAdapter` to track trained LoRA adapters and their versions.
+    *   Modify the `inference_worker` to be able to load a specific adapter.
+    *   The Supervisor will deploy the newly trained adapter in "shadow mode." It will route a small percentage (e.g., 5%) of live inference traffic to it.
+    *   It will log the confidence scores and failure rates (number of items needing correction) for both the production model and the shadow model.
+
+*   **[ ] Task 3.4: Implement Automated Promotion**
+    *   The Supervisor will analyze the performance logs.
+    *   If the shadow model consistently outperforms the production model over a set period (e.g., 24 hours), the Supervisor will automatically "promote" it, making it the new default model for all inference traffic.
+    *   It should also have a mechanism to automatically roll back if the new model performs worse.
+
+### **Phase 4: Real-Time Continual Learning (The "Live Teaching" Research)**
+
+**Goal:** Explore and implement cutting-edge techniques for near-instantaneous model updates. This is a research-focused phase.
+
+*   **[ ] Task 4.1: Research Model Editing Techniques**
+    *   Investigate the current state-of-the-art in model editing, specifically for vision and vision-language tasks (e.g., ROME, MEMIT).
+    *   Assess their stability, computational cost, and risk of catastrophic forgetting.
+
+*   **[ ] Task 4.2: Create a `ModelEditingPhase` Prototype**
+    *   Implement a new, experimental `Phase` that is triggered immediately after a correction.
+    *   This phase would keep a base model "hot" in VRAM.
+    *   It would apply the chosen model editing algorithm to make a surgical update to the model's weights based on the single correction.
+
+*   **[ ] Task 4.3: Develop a "Live Teaching" UI**
+    *   Create a new example UI that allows a user to interact with the model in real-time.
+    *   **Workflow:** User provides an image -> Model makes a mistake -> User corrects the mistake -> The `ModelEditingPhase` runs -> User immediately provides a *similar* image to test if the model has learned from the correction.
+
+*   **[ ] Task 4.4: Evaluate and Document**
+    *   Rigorously evaluate the performance and stability of the live-editing model.
+    *   Document the trade-offs between this approach and the more stable, batch-oriented fine-tuning method.
 
 ## Contributing
 
