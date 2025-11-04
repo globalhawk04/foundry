@@ -203,3 +203,71 @@ We welcome contributions! This project is in its early stages, and we are active
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## White Paper: The Local Data Flywheel
+
+### A Practical Architecture for Continual Learning on Consumer-Grade GPUs
+
+**Date:** November 4, 2025  
+**Authors:** knightbat2040
+**Abstract:** The proliferation of powerful, open-source foundation models has shifted the primary challenge in applied AI from model creation to model specialization. The key to competitive advantage lies in creating a "data flywheel"—a virtuous cycle where operational data is used to continuously fine-tune a generalist model into a domain-specific expert. Historically, this has required significant cloud compute resources and complex MLOps infrastructure. This paper outlines a novel, pragmatic architecture that makes this flywheel achievable on a single, consumer-grade GPU (e.g., with 8GB of VRAM), and proposes a "Time-Slicing" scheduling model for its future evolution into a truly autonomous learning system.
+
+### **1. The Paradigm Shift: From Static Training to the Dynamic Data Flywheel**
+
+The traditional machine learning lifecycle was a linear, high-latency process: collect a massive static dataset, spend months on labeling, train a model from scratch, and deploy it. This model would remain unchanged for long periods, slowly degrading as real-world data drifted.
+
+The advent of parameter-efficient fine-tuning (PEFT) techniques like LoRA and quantization (QLoRA) has inverted this paradigm. It is now more efficient to start with a powerful pre-trained foundation model and iteratively specialize it with small, high-quality batches of correction data.
+
+This creates the need for a **Data Flywheel**: an operational system designed to:
+1.  **Execute** AI tasks in a production environment.
+2.  **Triage** predictions where the model is uncertain.
+3.  **Correct** these predictions via a human-in-the-loop (HITL).
+4.  **Fine-Tune** the base model with these corrections to improve future performance.
+
+The primary barrier to democratizing this powerful loop has been the perceived need for extensive, server-grade GPU resources. We argue that this is no longer the case.
+
+### **2. The Core Challenge: Resource Contention on a Single GPU**
+
+The data flywheel requires at least two distinct, computationally expensive modes of operation: **Inference** (using the model) and **Training** (improving the model). On a single GPU with a constrained VRAM budget (e.g., 8GB), these two modes are mutually exclusive. A model being fine-tuned can consume 2-3x its base memory footprint for gradients and optimizer states, making it impossible to concurrently run another model for inference.
+
+Any viable single-GPU architecture must therefore be built around the principle of **serialized, modal execution**. The GPU must be treated as a singleton, mutex-protected resource.
+
+### **3. The Foundry Architecture: A Modal, Worker-Based Solution**
+
+We have implemented a solution to this problem in our "Local Fine-Tuning Station," an open-source example built on the Foundry framework. The architecture is composed of three key components:
+
+**A. The State Machine:** The application operates in a series of discrete, mutually exclusive states (`IDLE`, `INFERENCE`, `CORRECTION`, `TRAINING`, `COMPLETE`). This ensures the system has a clear understanding of its current task and resource requirements.
+
+**B. The GPU Lock:** A simple, file-based mutex (`GPULock`) guarantees that only one process can access the GPU at any given time. Any process attempting to use the GPU while it is locked will simply wait, preventing catastrophic VRAM overflow errors.
+
+**C. Decoupled, Background Workers:** The user-facing web server is decoupled from all heavy computation. GPU-intensive tasks are offloaded to separate, background processes:
+*   An **Inference Worker** acquires the GPU lock, loads an inference-optimized model, processes the entire batch of user data, creates correction tasks, and then *explicitly unloads the model from VRAM* before releasing the lock.
+*   A **Training Worker** acquires the GPU lock, loads a quantized base model, applies a PEFT/LoRA configuration, runs the fine-tuning loop on the corrected data, saves the resulting model adapter, and then *explicitly unloads the model* before releasing the lock.
+
+This "coarse-grained" scheduling model is highly robust. It allows a single GPU to successfully power the entire data flywheel by ensuring that the distinct operational modes of Inference and Training never overlap in their resource claims. The user experience is modal: they are either in a correction phase (no GPU usage) or a training phase (100% GPU usage).
+
+### **4. The Future: Fine-Grained "Time-Slicing" for a Seamless Experience**
+
+While robust, the coarse-grained model forces the user into long, uninterruptible "Training Mode" sessions. The future evolution of this architecture lies in a more sophisticated, fine-grained scheduling model we call **Time-Slicing**.
+
+The goal of Time-Slicing is to create the *illusion* of concurrency on a single GPU, enabling a more dynamic and interactive user experience. This is particularly relevant for the "Autonomous Learning Loop" paradigm, which requires a third, **Reasoning Worker** to analyze failures.
+
+**The Time-Slicing Scheduler would operate as follows:**
+
+1.  **Voluntary Lock Release:** The `Training Worker` would be modified. Instead of running for hours, it would train for a small, fixed number of steps (e.g., 10-20 seconds of work) and then voluntarily release the GPU lock. It would save its complete state (model weights, optimizer state, scheduler state) to disk or RAM.
+2.  **Opportunistic Execution:** A master "Scheduler" process would see the GPU lock is free and could then launch another, short-lived worker. For example, it could launch the `Inference Worker` to process a few new incoming items or launch a `Reasoning Worker` to analyze recent failures.
+3.  **Stateful Resumption:** Once the short-lived worker completes and releases the lock, the Scheduler would re-launch the `Training Worker`, which would seamlessly resume from its saved state.
+
+This approach would interleave Training, Inference, and Reasoning tasks, giving the user near-real-time access to the system's capabilities without ever violating the single-process constraint of the GPU.
+
+**Current Hurdles for Time-Slicing:**
+*   **Model Loading Overhead:** The primary bottleneck is the significant time it takes to load and unload models from VRAM. Swapping models every 10-20 seconds would currently be inefficient, as much of the time would be spent on loading rather than computation.
+*   **Framework Support:** Mainstream training frameworks are not yet optimized for this kind of rapid "pause and resume" workflow.
+
+### **5. Conclusion**
+
+It is entirely possible today to build a complete, end-to-end data flywheel for continual learning on a single, consumer-grade GPU. The key is a **modal, serialized architecture** that treats the GPU as a lockable resource, cleanly separating the Inference and Training workloads.
+
+The future of this architecture lies in a **Time-Slicing scheduler**. As model loading becomes faster and training frameworks become more flexible, this approach will enable the development of truly autonomous, self-improving AI systems that can run effectively even on constrained, local hardware. This represents a significant step toward the democratization of production-grade AI, moving it from the exclusive domain of large cloud infrastructure into the hands of individual developers and researchers.
+
+https://docs.run.ai/v2.17/Researcher/scheduling/GPU-time-slicing-scheduler/
