@@ -1,4 +1,4 @@
----
+
 
 # Foundry: The Framework for Production-Grade AI Data Flywheels
 
@@ -6,7 +6,6 @@
 
 Foundry is a Python framework for building production-grade, human-in-the-loop systems that turn daily operations into a scalable, ever-improving data generation engine for fine-tuning your AI models.
 
----
 
 ## The Problem: Moving Beyond the Notebook
 
