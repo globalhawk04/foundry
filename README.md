@@ -211,7 +211,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 **Date:** November 4, 2025  
 **Authors:** knightbat2040
 
-**Abstract:** The proliferation of powerful, open-source foundation models has shifted the primary challenge in applied AI from model creation to model specialization. The key to competitive advantage lies in creating a "data flywheel"—a virtuous cycle where operational data is used to continuously fine-tune a generalist model into a domain-specific expert. Historically, this has required significant cloud compute resources and complex MLOps infrastructure. This paper outlines a novel, pragmatic architecture that makes this flywheel achievable on a single, consumer-grade GPU (e.g., with 8GB of VRAM), and proposes a "Time-Slicing" scheduling model for its future evolution into a truly autonomous learning system.
+**Abstract:** The proliferation of powerful, open-source foundation models has shifted the primary challenge in applied AI from model creation to model specialization. The key to competitive advantage lies in creating a virtuous cycle where operational data is used to continuously fine-tune a generalist model into a domain-specific expert. Historically, this has required significant cloud compute resources and complex MLOps infrastructure. This paper outlines a novel, pragmatic architecture that makes this flywheel achievable on a single, consumer-grade GPU (e.g., with 8GB of VRAM), and proposes a Time-Slicing scheduling model for its future evolution into a truly autonomous learning system.
 
 ### **1. The Paradigm Shift: From Static Training to the Dynamic Data Flywheel**
 
@@ -235,7 +235,7 @@ Any viable single-GPU architecture must therefore be built around the principle 
 
 ### **3. The Foundry Architecture: A Modal, Worker-Based Solution**
 
-We have implemented a solution to this problem in our "Local Fine-Tuning Station," an open-source example built on the Foundry framework. The architecture is composed of three key components:
+We have implemented a solution to this problem in our Local Fine-Tuning Station, an open-source example built on the Foundry framework. The architecture is composed of three key components:
 
 **A. The State Machine:** The application operates in a series of discrete, mutually exclusive states (`IDLE`, `INFERENCE`, `CORRECTION`, `TRAINING`, `COMPLETE`). This ensures the system has a clear understanding of its current task and resource requirements.
 
@@ -259,7 +259,7 @@ The goal of Time-Slicing is to create the *illusion* of concurrency on a single 
 2.  **Opportunistic Execution:** A master "Scheduler" process would see the GPU lock is free and could then launch another, short-lived worker. For example, it could launch the `Inference Worker` to process a few new incoming items or launch a `Reasoning Worker` to analyze recent failures.
 3.  **Stateful Resumption:** Once the short-lived worker completes and releases the lock, the Scheduler would re-launch the `Training Worker`, which would seamlessly resume from its saved state.
 
-This approach would interleave Training, Inference, and Reasoning tasks, giving the user near-real-time access to the system's capabilities without ever violating the single-process constraint of the GPU.
+This approach would interweave Training, Inference, and Reasoning tasks, giving the user near-real-time access to the system's capabilities without ever violating the single-process constraint of the GPU.
 
 **Current Hurdles for Time-Slicing:**
 *   **Model Loading Overhead:** The primary bottleneck is the significant time it takes to load and unload models from VRAM. Swapping models every 10-20 seconds would currently be inefficient, as much of the time would be spent on loading rather than computation.
