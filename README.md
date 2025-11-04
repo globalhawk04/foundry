@@ -21,8 +21,6 @@ Building a simple AI prototype is easy. Building a robust, production-ready AI s
 
 Foundry provides the architectural components to solve these problems by helping you build a **data flywheel**: a virtuous cycle where every human correction directly contributes to a better, more accurate, and more autonomous next-generation AI model.
 
-![Foundry Flywheel Diagram](https://user-images.githubusercontent.com/12345/placeholder-flywheel.png) <!-- Placeholder for a real diagram -->
-
 1.  **Resilient Pipelines:** Structure your AI tasks as a series of resilient `Phases`. If a step fails or needs clarification, the pipeline pauses, preserving the work from successful prior steps.
 2.  **Human-in-the-Loop:** When the system detects ambiguity (based on confidence scores or custom business logic), it automatically generates a `ClarificationRequest`, pausing the pipeline to ask a human operator for the specific information it needs.
 3.  **Correction & Fine-Tuning:** All AI outputs can be reviewed and corrected by a human in a UI. Foundry is UI-agnostic, supporting everything from simple web forms to complex bounding box editors. Every correction is saved as a high-quality `CorrectionRecord`.
@@ -62,9 +60,6 @@ The best way to understand Foundry is to see it run. Our flagship `production_ru
     *   Finally, it will start a web server and give you a URL.
 
 5.  **Open the URL in your browser (`http://localhost:8000`) and become the human in the loop.** Correct the AI's mistakes. When you're done, view the final report and export your work as a fine-tuning dataset.
-
-![Invoice Correction Screenshot](https://user-images.githubusercontent.com/12345/placeholder-invoice.gif) <!-- Placeholder for a GIF -->
-![Pole Detection Screenshot](https://user-images.githubusercontent.com/12345/placeholder-poles.gif) <!-- Placeholder for a GIF -->
 
 ---
 
