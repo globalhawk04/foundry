@@ -1,0 +1,38 @@
+<!-- FILE: templates/partials/_clarification_pole.html (Corrected) -->
+<article id="pole-editor-card">
+    <header>
+        <h2>
+            Review Pole Detection for Job #{{ clarification_request.context_data.job_id }}
+        </h2>
+        <p>Review the AI's detections. Incorrect boxes can be deleted. Missing poles can be added by clicking and dragging on the image. Low-confidence boxes are highlighted in orange.</p>
+    </header>
+
+    <div id="canvas-container" style="border: 1px solid var(--card-border-color); border-radius: var(--pico-border-radius); position: relative;">
+        <canvas id="canvas-editor"></canvas>
+    </div>
+    
+    <footer>
+        <p><strong>Controls:</strong> Click a box to select. Press <strong>Delete</strong> or <strong>Backspace</strong> to remove. Click and drag on an empty area to draw a new box.</p>
+        <button id="save-correction-btn" class="primary" data-request-id="{{ clarification_request.id }}">
+            Save Correction & Load Next
+        </button>
+    </footer>
+</article>
+
+<script id="ai-data" type="application/json">
+    {{ clarification_request.context_data | tojson | safe }}
+</script>
+
+<!-- Load the libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="/static/js/bounding_box_editor.js"></script>
+
+<!-- 
+    THIS IS THE FIX:
+    Directly call the initialization function. By the time the browser reaches
+    this line, the two library scripts above have been loaded and the
+    initializeEditor function is available.
+-->
+<script>
+    initializeEditor();
+</script>

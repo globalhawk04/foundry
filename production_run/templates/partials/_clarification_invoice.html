@@ -1,0 +1,106 @@
+<!--
+This template is an HTML partial rendered by the /api/clarifications/next endpoint.
+It displays the AI's output for an invoice and allows the user to correct it.
+-->
+<article>
+    <header>
+        <h2>
+            Review Invoice for Job #{{ clarification_request.context_data.job_id }}
+        </h2>
+        <p>Please review the AI's extraction. Fields with low confidence are highlighted.</p>
+    </header>
+
+    <!-- 
+        The hx-post attribute tells HTMX to send the form data to the resolve endpoint.
+        The hx-target="#clarification-section" tells HTMX to replace the entire section
+        with whatever the server responds with. Since the server will trigger a new
+        card load, this will effectively replace the current card with the next one.
+    -->
+    <form hx-post="/api/clarifications/{{ clarification_request.id }}/resolve" 
+          hx-target="#clarification-section" 
+          hx-swap="innerHTML">
+        
+        <div class="grid">
+            <!-- Left Side: Invoice Image -->
+            <div style="padding-right: 1rem;">
+                <img src="{{ clarification_request.context_data.image_url }}" alt="Invoice Image" style="max-width: 100%; border-radius: var(--pico-border-radius); border: 1px solid var(--card-border-color);">
+            </div>
+
+            <!-- Right Side: Correction Form -->
+            <div>
+                {% set ai_output = clarification_request.context_data.ai_output %}
+                {% set threshold = 0.95 %} {# We can hardcode this for display purposes, or pass it from the backend #}
+
+                <!-- General Invoice Information -->
+                <div class="grid">
+                    <div class="{{ 'low-confidence' if ai_output.supplier_name.confidence < threshold }}">
+                        <label for="supplier_name">
+                            Supplier Name (Confidence: {{ (ai_output.supplier_name.confidence * 100)|round(1) }}%)
+                        </label>
+                        <input type="text" id="supplier_name" name="supplier_name" value="{{ ai_output.supplier_name.value }}">
+                    </div>
+                    <div class="{{ 'low-confidence' if ai_output.invoice_date.confidence < threshold }}">
+                        <label for="invoice_date">
+                            Invoice Date (Confidence: {{ (ai_output.invoice_date.confidence * 100)|round(1) }}%)
+                        </label>
+                        <input type="date" id="invoice_date" name="invoice_date" value="{{ ai_output.invoice_date.value }}">
+                    </div>
+                </div>
+                 <div class="{{ 'low-confidence' if ai_output.invoice_number.confidence < threshold }}">
+                    <label for="invoice_number">
+                        Invoice Number (Confidence: {{ (ai_output.invoice_number.confidence * 100)|round(1) }}%)
+                    </label>
+                    <input type="text" id="invoice_number" name="invoice_number" value="{{ ai_output.invoice_number.value }}">
+                </div>
+
+                <hr>
+                
+                <!-- Invoice Line Items -->
+                <h6>Line Items</h6>
+                {% for item in ai_output.line_items %}
+                <details open>
+                    <summary><strong>{{ item.item_description.value | truncate(30) }}</strong></summary>
+                    <div style="padding: 1rem; border: 1px solid var(--card-border-color); border-radius: var(--pico-border-radius);">
+                        <div class="{{ 'low-confidence' if item.item_description.confidence < threshold }}">
+                            <label>Item Description (Confidence: {{ (item.item_description.confidence * 100)|round(1) }}%)</label>
+                            <!-- Note the '[]' in the name. This helps form parsers group the line items correctly. -->
+                            <input type="text" name="line_items_item_description[]" value="{{ item.item_description.value }}">
+                        </div>
+                        <div class="grid">
+                             <div class="{{ 'low-confidence' if item.quantity.confidence < threshold }}">
+                                <label>Qty (Conf: {{ (item.quantity.confidence * 100)|round(1) }}%)</label>
+                                <input type="number" step="any" name="line_items_quantity[]" value="{{ item.quantity.value }}">
+                            </div>
+                             <div class="{{ 'low-confidence' if item.unit_price.confidence < threshold }}">
+                                <label>Unit Price (Conf: {{ (item.unit_price.confidence * 100)|round(1) }}%)</label>
+                                <input type="number" step="any" name="line_items_unit_price[]" value="{{ item.unit_price.value }}">
+                            </div>
+                             <div class="{{ 'low-confidence' if item.total_cost.confidence < threshold }}">
+                                <label>Total (Conf: {{ (item.total_cost.confidence * 100)|round(1) }}%)</label>
+                                <input type="number" step="any" name="line_items_total_cost[]" value="{{ item.total_cost.value }}">
+                            </div>
+                        </div>
+                    </div>
+                </details>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <footer>
+            <button type="submit" class="primary">Save Correction & Load Next</button>
+        </footer>
+    </form>
+</article>
+
+<!-- This is a special partial to handle the case where there are no more items to review. -->
+<!-- It will be loaded into the #clarification-section when the API finds no more pending requests. -->
+<article id="clarification-complete" style="text-align: center;">
+    <header>
+        <h2>All Done!</h2>
+    </header>
+    <p>All items requiring human review for this run have been processed.</p>
+    <footer>
+        <a href="/report" role="button" class="primary">View Final Report</a>
+    </footer>
+</article>
