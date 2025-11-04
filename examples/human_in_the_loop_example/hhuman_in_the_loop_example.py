@@ -99,18 +99,24 @@ def run_ambiguity_detection_pipeline():
         HumanInTheLoopPhase(detector_class=UnlinkedProductDetector)
     ])
     
-    # We need to pass the job_id and db_session in the initial context for this phase
+    # --- THIS IS THE FIX ---
+    # The context should only contain JSON-serializable data.
+    # The db_session is passed to the phase by the pipeline runner automatically.
     job = db.get(Job, 1)
-    job.pipeline_context = {"job_id": 1, "db_session": db}
-    db.commit()
+    
+    # Only set the initial context if it doesn't exist.
+    # This makes the script safely re-runnable.
+    if not job.pipeline_context:
+        job.pipeline_context = {"job_id": 1}
+        db.commit()
 
+    # Now, run the pipeline. The runner will handle the session.
     detection_pipeline.run(job_id=1)
 
     # Verify the outcome
     job = db.get(Job, 1)
     print(f"--- Pipeline finished. Job status is now: '{job.status}' ---") # Should be 'pending_clarification'
     db.close()
-
 
 # --- 3. A MINIMAL WEB SERVER TO HOST THE CLARIFICATION FEED ---
 class FoundryHITLRequestHandler(http.server.SimpleHTTPRequestHandler):

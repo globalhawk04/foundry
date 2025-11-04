@@ -1,4 +1,4 @@
-# FILE: foundry/human_in_the_loop.py
+# FILE: foundry/human_in_the_loop.py (Corrected)
 
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
@@ -8,7 +8,7 @@ from .pipeline import Phase, PhaseExecutionError
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 template_env = Environment(
-    loader=PackageLoader("foundry", "templates"), # Look inside the 'foundry' package for a 'templates' directory
+    loader=PackageLoader("foundry", "templates"),
     autoescape=select_autoescape()
 )
 
@@ -64,21 +64,23 @@ class HumanInTheLoopPhase(Phase):
             raise TypeError("detector_class must be a subclass of AmbiguityDetector.")
         self.detector_class = detector_class
 
-    def process(self, context: dict) -> dict:
+    # --- FIX: Updated the method signature to match the new abstract Phase ---
+    def process(self, context: dict, db_session: Session) -> dict:
         """
         Executes the ambiguity detection logic.
 
         Args:
-            context: The pipeline context, which must include 'job_id' and a 'db_session'.
+            context: The pipeline context, which must include 'job_id'.
+            db_session: The active SQLAlchemy session, provided by the pipeline.
 
         Returns:
             The original context, unchanged.
         """
         job_id = context.get('job_id')
-        db_session = context.get('db_session')
-
-        if not job_id or not db_session:
-            raise PhaseExecutionError("Context must contain 'job_id' and 'db_session'.")
+        
+        # --- FIX: Removed dependency on getting db_session from context ---
+        if not job_id:
+            raise PhaseExecutionError("Context must contain 'job_id'.")
 
         job = db_session.get(Job, job_id)
         if not job:
@@ -106,10 +108,6 @@ class HumanInTheLoopPhase(Phase):
             job.status = "pending_clarification"
             db_session.commit()
             
-            # We can optionally raise a specific exception to halt the pipeline here
-            # or simply let it finish, depending on desired behavior.
-            # For now, we'll let it finish this phase successfully.
-        
         else:
             print(f"--- [Job {job_id}] No ambiguities found. ---")
 
@@ -117,7 +115,7 @@ class HumanInTheLoopPhase(Phase):
 
 # ==============================================================================
 # 3. EXAMPLE IMPLEMENTATION
-# This shows how a developer would use the framework.
+# (This section is unchanged and remains correct)
 # ==============================================================================
 
 class UnlinkedProductDetector(AmbiguityDetector):
@@ -131,7 +129,6 @@ class UnlinkedProductDetector(AmbiguityDetector):
         
         for item in ai_output.get("inventory_items", []):
             if item.get("linked_pantry_item_id") is None:
-                # We found an ambiguity!
                 requests.append({
                     "request_type": "LINK_PRODUCT",
                     "context_data": {
@@ -145,21 +142,14 @@ class UnlinkedProductDetector(AmbiguityDetector):
 
 # ==============================================================================
 # 4. CLARIFICATION FEED UI RENDERING
+# (This section is unchanged and remains correct)
 # ==============================================================================
 
 def render_clarification_feed(db_session: Session, user_id: int) -> str:
     """
     Renders the main container page for the clarification feed.
-
-    Args:
-        db_session: The SQLAlchemy session.
-        user_id: The ID of the current user.
-
-    Returns:
-        The HTML for the main feed page.
     """
     template = template_env.get_template("clarification_feed.html")
-    # The main page doesn't need much context, just the user_id for the initial fetch
     return template.render(user_id=user_id)
 
 
@@ -167,18 +157,10 @@ def get_next_clarification_card(db_session: Session, user_id: int) -> str:
     """
     Finds the next pending clarification request for a user and renders the
     appropriate HTML card for it.
-
-    Args:
-        db_session: The SQLAlchemy session.
-        user_id: The ID of the current user.
-
-    Returns:
-        The HTML for the next question card, or an "all done" message.
     """
     from sqlalchemy import select
     from .models import FoundryClarificationRequest
 
-    # Find the oldest pending request for this user
     query = select(FoundryClarificationRequest).where(
         FoundryClarificationRequest.owner_id == user_id,
         FoundryClarificationRequest.status == "pending"
@@ -187,21 +169,15 @@ def get_next_clarification_card(db_session: Session, user_id: int) -> str:
     next_request = db_session.execute(query).scalars().first()
 
     if not next_request:
-        # If no requests are left, render the completion partial
         template = template_env.get_template("partials/_clarification_complete.html")
         return template.render()
 
-    # --- DYNAMIC TEMPLATE SELECTION ---
-    # This is the core of the extensible UI. The request_type string
-    # directly maps to the filename of the template partial.
     request_type = next_request.request_type
     template_name = f"partials/_clarification_{request_type.lower()}.html"
 
     try:
         template = template_env.get_template(template_name)
     except Exception:
-        # Fallback for unregistered or mistyped request types
         template = template_env.get_template("partials/_clarification_unknown.html")
 
-    # The context is the request object itself, which the template can use
     return template.render(request=next_request)

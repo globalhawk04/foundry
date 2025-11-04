@@ -1,4 +1,4 @@
-# FILE: foundry/pipeline.py
+# FILE: foundry/pipeline.py (Corrected)
 
 import json
 from abc import ABC, abstractmethod
@@ -27,13 +27,14 @@ class Phase(ABC):
         return self.__class__.__name__
 
     @abstractmethod
-    def process(self, context: dict) -> dict:
+    def process(self, context: dict, db_session: Session) -> dict:
         """
         The core logic of the phase. It receives the current pipeline context,
         performs its operations, and returns the updated context.
 
         Args:
             context: A dictionary containing the current state of the pipeline.
+            db_session: The active SQLAlchemy session for any database operations.
 
         Returns:
             The updated context dictionary.
@@ -81,8 +82,9 @@ class Pipeline:
             try:
                 print(f"--- [Job {job_id}] Running Phase: {phase.name} ---")
                 
-                # Execute the core logic of the phase
-                context = phase.process(context)
+                # --- FIX: Pass the db_session as an explicit argument ---
+                # This ensures the context dictionary only ever contains serializable data.
+                context = phase.process(context, db_session=self.db)
                 
                 # --- RESILIENCE CHECKPOINT ---
                 # The state is saved to the database *after* each phase succeeds.
@@ -113,7 +115,8 @@ class Pipeline:
 
 class ExtractTextPhase(Phase):
     """An example Phase that extracts text from the initial context."""
-    def process(self, context: dict) -> dict:
+    # --- FIX: Updated method signature to match the abstract class ---
+    def process(self, context: dict, db_session: Session) -> dict:
         text_content = context.get("content")
         if not text_content:
             raise PhaseExecutionError("Input context must contain a 'content' key with text.")
@@ -125,7 +128,8 @@ class ExtractTextPhase(Phase):
 
 class ConvertToUppercasePhase(Phase):
     """An example Phase that transforms the extracted text to uppercase."""
-    def process(self, context: dict) -> dict:
+    # --- FIX: Updated method signature to match the abstract class ---
+    def process(self, context: dict, db_session: Session) -> dict:
         extracted_text = context.get("extracted_text")
         if not extracted_text:
             raise PhaseExecutionError("Context is missing 'extracted_text' from the previous phase.")
